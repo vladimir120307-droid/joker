@@ -1,67 +1,23 @@
 'use strict';
-// Собирает значки JOKER из рисунка tools/icon-source.png (серый эскиз глаза на чёрном)
+// Собирает значки JOKER из анимации tools/icon-source.gif (серый эскиз глаза в звезде на чёрном)
 // без внешних зависимостей.
-//   node tools/make-icons.js   — значки расширения (extension/icons) и значок приложения Android
+//   node tools/make-icons.js   — значки расширения (extension/icons), значок приложения Android
 //                                (android/app/src/main/res: mipmap-*/ic_launcher_foreground.png и drawable/ic_launcher_background.xml)
+//                                и анимированный логотип для страницы новой вкладки и README
 // Этот же рисунок использует tools/make-ico.js (значок JOKER.exe).
+// Системные значки (панель браузера, ярлык, .exe) по природе неподвижные, поэтому берут первый кадр;
+// логотип внутри приложений проигрывает все кадры гифки. Исходник готовит tools/clean-icon-gif.js.
 // Чёрный фон рисунка превращается в «прозрачность по яркости»: серые линии ложатся и на плитку значка,
 // и на прозрачный слой Android без швов. Для мелких размеров линии утолщаются, чтобы не пропадали.
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const { decodeGif } = require('./gif');
 
-const SOURCE = path.join(__dirname, 'icon-source.png');
+const SOURCE = path.join(__dirname, 'icon-source.gif');
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 
 // ---------- PNG ----------
-function decodePng(buf) {
-  if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error('это не PNG');
-  let pos = 8, w = 0, h = 0, depth = 0, ctype = 0, interlace = 0, plte = null, trns = null;
-  const idat = [];
-  while (pos < buf.length) {
-    const len = buf.readUInt32BE(pos), type = buf.toString('latin1', pos + 4, pos + 8);
-    const data = buf.subarray(pos + 8, pos + 8 + len);
-    pos += 12 + len;
-    if (type === 'IHDR') { w = data.readUInt32BE(0); h = data.readUInt32BE(4); depth = data[8]; ctype = data[9]; interlace = data[12]; }
-    else if (type === 'PLTE') plte = data;
-    else if (type === 'tRNS') trns = data;
-    else if (type === 'IDAT') idat.push(data);
-    else if (type === 'IEND') break;
-  }
-  if (depth !== 8 || interlace !== 0) throw new Error('поддерживается только 8-битный PNG без чересстрочной развёртки');
-  const ch = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[ctype];
-  if (!ch) throw new Error('неизвестный тип PNG: ' + ctype);
-  const raw = zlib.inflateSync(Buffer.concat(idat));
-  const stride = w * ch, out = Buffer.alloc(w * h * 4);
-  let cur = Buffer.alloc(stride), prev = Buffer.alloc(stride), p = 0;
-  for (let y = 0; y < h; y++) {
-    const f = raw[p++];
-    raw.copy(cur, 0, p, p + stride); p += stride;
-    for (let i = 0; i < stride; i++) {
-      const a = i >= ch ? cur[i - ch] : 0, b = prev[i], c = i >= ch ? prev[i - ch] : 0;
-      let add = 0;
-      if (f === 1) add = a;
-      else if (f === 2) add = b;
-      else if (f === 3) add = (a + b) >> 1;
-      else if (f === 4) {
-        const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c);
-        add = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
-      }
-      cur[i] = (cur[i] + add) & 255;
-    }
-    for (let x = 0; x < w; x++) {
-      const o = (y * w + x) * 4;
-      if (ctype === 6) { out[o] = cur[x * 4]; out[o + 1] = cur[x * 4 + 1]; out[o + 2] = cur[x * 4 + 2]; out[o + 3] = cur[x * 4 + 3]; }
-      else if (ctype === 2) { out[o] = cur[x * 3]; out[o + 1] = cur[x * 3 + 1]; out[o + 2] = cur[x * 3 + 2]; out[o + 3] = 255; }
-      else if (ctype === 0) { out[o] = out[o + 1] = out[o + 2] = cur[x]; out[o + 3] = 255; }
-      else if (ctype === 4) { out[o] = out[o + 1] = out[o + 2] = cur[x * 2]; out[o + 3] = cur[x * 2 + 1]; }
-      else { const k = cur[x]; out[o] = plte[k * 3]; out[o + 1] = plte[k * 3 + 1]; out[o + 2] = plte[k * 3 + 2]; out[o + 3] = trns && k < trns.length ? trns[k] : 255; }
-    }
-    [prev, cur] = [cur, prev];
-  }
-  return { w, h, rgba: out };
-}
-
 function encodePng(rgba, w, h) {
   const raw = Buffer.alloc((w * 4 + 1) * h);
   for (let y = 0; y < h; y++) { raw[y * (w * 4 + 1)] = 0; rgba.copy(raw, y * (w * 4 + 1) + 1, y * w * 4, (y + 1) * w * 4); }
@@ -76,34 +32,40 @@ function encodePng(rgba, w, h) {
 }
 
 // ---------- рисунок ----------
-// Яркость -> прозрачность; обрезка до квадрата вокруг рисунка. Возвращает { side, alpha, peak, bg }.
+// Яркость -> прозрачность; обрезка до квадрата вокруг рисунка одна на все кадры (иначе анимация «прыгала» бы).
+// Возвращает { side, alpha (первый кадр), frames (карты прозрачности всех кадров), delays (мс), peak, bg }.
 let artCache = null;
 function loadArt() {
   if (artCache) return artCache;
-  const { w, h, rgba } = decodePng(fs.readFileSync(SOURCE));
-  const lum = new Float32Array(w * h);
-  for (let i = 0; i < w * h; i++) lum[i] = 0.299 * rgba[i * 4] + 0.587 * rgba[i * 4 + 1] + 0.114 * rgba[i * 4 + 2];
-  const sorted = Float32Array.from(lum).sort();
-  const bg = sorted[Math.floor(w * h * 0.5)];                                // цвет фона — медиана: почти весь кадр это фон
-  const peak = sorted[Math.floor(w * h * 0.997)];                            // самые яркие линии
-  const EDGE = 8;                                                            // по краю картинки идёт светлая кайма — её не считаем
-  const a = new Float32Array(w * h);
+  const gif = decodeGif(fs.readFileSync(SOURCE));
+  const { width: w, height: h } = gif;
+  const lums = gif.frames.map((f) => {
+    const l = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) l[i] = 0.299 * f.rgba[i * 4] + 0.587 * f.rgba[i * 4 + 1] + 0.114 * f.rgba[i * 4 + 2];
+    return l;
+  });
+  // яркость в гифке целая (палитра серая), поэтому проценты считаем по гистограмме
+  const hist = (list) => { const t = new Uint32Array(256); for (const l of list) for (let i = 0; i < l.length; i++) t[Math.round(l[i])]++; return t; };
+  const quantile = (t, total, q) => { let acc = 0; for (let v = 0; v < 256; v++) { acc += t[v]; if (acc > total * q) return v; } return 255; };
+  const bg = quantile(hist([lums[0]]), w * h, 0.5);                          // цвет фона — медиана: почти весь кадр это фон
+  const peak = quantile(hist(lums), w * h * lums.length, 0.997);             // самые яркие линии (по всем кадрам)
+  const full = lums.map((l) => l.map((v) => clamp((v - bg) / (peak - bg))));
   let x0 = w, y0 = h, x1 = -1, y1 = -1;
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const inner = x >= EDGE && y >= EDGE && x < w - EDGE && y < h - EDGE;
-    const v = inner ? clamp((lum[y * w + x] - bg) / (peak - bg)) : 0;
-    a[y * w + x] = v;
-    if (v > 0.12) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  for (const a of full) for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (a[y * w + x] > 0.12) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   }
   if (x1 < 0) throw new Error('на рисунке ничего не найдено');
   const side = Math.max(x1 - x0 + 1, y1 - y0 + 1) + 4;
   const ox = Math.round((x0 + x1) / 2 - side / 2), oy = Math.round((y0 + y1) / 2 - side / 2);
-  const alpha = new Float32Array(side * side);
-  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
-    const sx = ox + x, sy = oy + y;
-    if (sx >= 0 && sy >= 0 && sx < w && sy < h) alpha[y * side + x] = a[sy * w + sx];
-  }
-  return (artCache = { side, alpha, peak: Math.round(peak), bg: Math.round(bg) });
+  const frames = full.map((a) => {
+    const out = new Float32Array(side * side);
+    for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
+      const sx = ox + x, sy = oy + y;
+      if (sx >= 0 && sy >= 0 && sx < w && sy < h) out[y * side + x] = a[sy * w + sx];
+    }
+    return out;
+  });
+  return (artCache = { side, alpha: frames[0], frames, delays: gif.frames.map((f) => f.delay), peak: Math.round(peak), bg: Math.round(bg) });
 }
 
 // Утолщение линий (максимум по квадрату радиуса r)
@@ -206,66 +168,41 @@ function renderRGBA(size, { tile = true, artFrac = tile ? 0.72 : 0.52, alpha = n
 const render = (size) => renderRGBA(size, { tile: true });
 const png = (size) => encodePng(render(size), size, size);
 
-// ---------- анимация: «дрожание» карандашного эскиза ----------
-function mulberry32(a) {
-  return () => {
-    a |= 0; a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+// Кадры анимации: настоящие кадры исходной гифки (задержки — art.delays)
+function animationFrames(size) {
+  return loadArt().frames.map((alpha) => renderRGBA(size, { tile: true, alpha }));
 }
 
-// Лёгкое плавное искажение рисунка: линии «дрожат», как в покадровой анимации от руки
-function wobble(src, side, amp, seed) {
-  const rnd = mulberry32(seed), TAU = Math.PI * 2;
-  const ph = Array.from({ length: 4 }, () => rnd() * TAU);
-  const out = new Float32Array(side * side);
-  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
-    const u = x / side, v = y / side;
-    const dx = amp * (0.6 * Math.sin(TAU * (1.7 * u + 1.1 * v) + ph[0]) + 0.4 * Math.sin(TAU * (3.1 * v - 0.9 * u) + ph[1]));
-    const dy = amp * (0.6 * Math.sin(TAU * (1.3 * v + 0.8 * u) + ph[2]) + 0.4 * Math.sin(TAU * (2.7 * u + 1.2 * v) + ph[3]));
-    const fx = clamp(x + dx, 0, side - 1), fy = clamp(y + dy, 0, side - 1);
-    const x0 = Math.floor(fx), y0 = Math.floor(fy), x1 = Math.min(side - 1, x0 + 1), y1 = Math.min(side - 1, y0 + 1);
-    const tx = fx - x0, ty = fy - y0;
-    out[y * side + x] = (src[y0 * side + x0] * (1 - tx) + src[y0 * side + x1] * tx) * (1 - ty)
-      + (src[y1 * side + x0] * (1 - tx) + src[y1 * side + x1] * tx) * ty;
-  }
-  return out;
-}
-
-// Кадры анимации значка: рисунок дрожит, яркость линий чуть мерцает
-function animationFrames(size, count = 6) {
-  const art = loadArt();
-  const flicker = [1, 0.93, 1.04, 0.96, 1.02, 0.94];
-  const frames = [];
-  for (let k = 0; k < count; k++) {
-    const a = wobble(art.alpha, art.side, 1.7, 1000 + k * 77);
-    for (let i = 0; i < a.length; i++) a[i] = clamp(a[i] * flicker[k % flicker.length]);
-    frames.push(renderRGBA(size, { tile: true, alpha: a }));
-  }
-  return frames;
-}
-
-// Анимированный PNG (APNG): играет в браузерах, Electron и WebView без библиотек
-function encodeApng(frames, w, h, delayMs) {
+// Анимированный PNG (APNG): играет в браузерах, Electron и WebView без библиотек.
+// delays — задержка кадра в мс (одно число для всех кадров или массив); gray — хранить «серый + прозрачность»,
+// это вдвое меньше, если картинка серая (проверяется)
+function encodeApng(frames, w, h, delays, { gray = false } = {}) {
   const chunk = (type, data) => {
     const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
     const td = Buffer.concat([Buffer.from(type), data]);
     const crc = Buffer.alloc(4); crc.writeUInt32BE(zlib.crc32(td) >>> 0);
     return Buffer.concat([len, td, crc]);
   };
-  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 6;
+  const bpp = gray ? 2 : 4, stride = w * bpp + 1;
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = gray ? 4 : 6;
   const actl = Buffer.alloc(8); actl.writeUInt32BE(frames.length, 0); actl.writeUInt32BE(0, 4);   // 0 повторов = бесконечно
   const parts = [Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('acTL', actl)];
   let seq = 0;
   frames.forEach((rgba, i) => {
-    const raw = Buffer.alloc((w * 4 + 1) * h);
-    for (let y = 0; y < h; y++) { raw[y * (w * 4 + 1)] = 0; rgba.copy(raw, y * (w * 4 + 1) + 1, y * w * 4, (y + 1) * w * 4); }
-    const z = zlib.deflateSync(raw);
+    const raw = Buffer.alloc(stride * h);
+    for (let y = 0; y < h; y++) {
+      const row = y * stride;                                                  // тип фильтра строки 0 (без фильтра)
+      if (!gray) { rgba.copy(raw, row + 1, y * w * 4, (y + 1) * w * 4); continue; }
+      for (let x = 0; x < w; x++) {
+        const s = (y * w + x) * 4;
+        if (rgba[s] !== rgba[s + 1] || rgba[s] !== rgba[s + 2]) throw new Error('gray: в картинке есть цветные пиксели');
+        raw[row + 1 + x * 2] = rgba[s]; raw[row + 2 + x * 2] = rgba[s + 3];
+      }
+    }
+    const z = zlib.deflateSync(raw, { level: 9 });
     const fctl = Buffer.alloc(26);
     fctl.writeUInt32BE(seq++, 0); fctl.writeUInt32BE(w, 4); fctl.writeUInt32BE(h, 8);   // смещение 0,0
-    fctl.writeUInt16BE(delayMs, 20); fctl.writeUInt16BE(1000, 22);                      // задержка кадра: delayMs / 1000 с
+    fctl.writeUInt16BE(Array.isArray(delays) ? delays[i] : delays, 20); fctl.writeUInt16BE(1000, 22);   // задержка кадра: мс / 1000 с
     parts.push(chunk('fcTL', fctl));                                                     // dispose=0, blend=0: кадр целиком заменяет предыдущий
     if (i === 0) parts.push(chunk('IDAT', z));
     else { const fd = Buffer.alloc(4 + z.length); fd.writeUInt32BE(seq++, 0); z.copy(fd, 4); parts.push(chunk('fdAT', fd)); }
@@ -274,12 +211,12 @@ function encodeApng(frames, w, h, delayMs) {
   return Buffer.concat(parts);
 }
 
-module.exports = { render, png, renderRGBA, encodePng, encodeApng, animationFrames, decodePng, loadArt };
+module.exports = { render, png, renderRGBA, encodePng, encodeApng, animationFrames, loadArt };
 
 if (require.main === module) {
   const root = path.join(__dirname, '..');
   const art = loadArt();
-  console.log(`рисунок: ${art.side}x${art.side} px, цвет фона ${art.bg}, цвет линий ${art.peak}`);
+  console.log(`рисунок: ${art.side}x${art.side} px, кадров: ${art.frames.length}, цвет фона ${art.bg}, цвет линий ${art.peak}`);
 
   const extDir = path.join(root, 'extension', 'icons');
   fs.mkdirSync(extDir, { recursive: true });
@@ -312,15 +249,16 @@ if (require.main === module) {
 `);
   console.log('слои значка Android записаны');
 
-  // Анимированный логотип для страницы новой вкладки (ПК и Android) и README: тот же значок, линии эскиза «дрожат».
-  // logo-static.png — неподвижная версия для тех, у кого включено «уменьшить движение».
-  const logo = encodeApng(animationFrames(192, 6), 192, 192, 110);
-  const still = encodePng(render(192), 192, 192);
+  // Анимированный логотип для страницы новой вкладки (ПК и Android) и README: настоящие кадры исходной гифки
+  // на плитке значка. logo-static.png — неподвижная версия (первый кадр) для тех, у кого включено «уменьшить движение».
+  const LOGO = 192;
+  const logo = encodeApng(animationFrames(LOGO), LOGO, LOGO, art.delays, { gray: true });
+  const still = encodePng(render(LOGO), LOGO, LOGO);
+  fs.mkdirSync(path.join(root, 'assets'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'assets', 'logo.png'), logo);
   for (const dir of [path.join(root, 'desktop', 'ui'), path.join(res, '..', 'assets')]) {
     fs.writeFileSync(path.join(dir, 'logo.png'), logo);
     fs.writeFileSync(path.join(dir, 'logo-static.png'), still);
   }
-  fs.mkdirSync(path.join(root, 'assets'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'assets', 'logo.png'), encodeApng(animationFrames(256, 6), 256, 256, 110));
-  console.log('анимированный логотип записан (desktop/ui, android assets, assets/logo.png)');
+  console.log(`анимированный логотип записан: ${art.frames.length} кадров, ${(logo.length / 1024).toFixed(0)} КБ (desktop/ui, android assets, assets/logo.png)`);
 }
