@@ -75,10 +75,36 @@ jobs:
       - name: Собрать JOKER.exe и архив
         working-directory: desktop
         run: npm run package
+      - name: Собрать установщик
+        working-directory: desktop
+        run: npm run installer
+      - name: Проверить установщик (тихая установка и удаление)
+        shell: pwsh
+        working-directory: desktop
+        run: |
+          $setup = Get-ChildItem out -Filter 'JOKER-Setup-*.exe' | Select-Object -First 1
+          if (-not $setup) { throw 'Установщик не найден' }
+          $dir = Join-Path $env:RUNNER_TEMP 'JOKER-installed'
+          Write-Host ("Установщик: {0} ({1:N0} байт)" -f $setup.Name, $setup.Length)
+
+          Start-Process -FilePath $setup.FullName -ArgumentList '/S', "/D=$dir" -Wait
+          foreach ($f in 'JOKER.exe', 'resources\app.asar', 'Uninstall JOKER.exe') {
+            if (-not (Test-Path (Join-Path $dir $f))) { throw "После установки нет файла: $f" }
+          }
+          $info = (Get-Item (Join-Path $dir 'JOKER.exe')).VersionInfo
+          Write-Host "Установлено: $($info.ProductName) $($info.ProductVersion), $($info.FileDescription)"
+          if ($info.ProductName -ne 'JOKER') { throw "Неверное имя продукта: $($info.ProductName)" }
+
+          # _?= заставляет деинсталлятор работать на месте и дождаться конца
+          Start-Process -FilePath (Join-Path $dir 'Uninstall JOKER.exe') -ArgumentList '/S', "_?=$dir" -Wait
+          if (Test-Path (Join-Path $dir 'JOKER.exe')) { throw 'После удаления JOKER.exe остался на месте' }
+          Write-Host 'Установка и удаление работают'
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-windows
-          path: desktop/out/JOKER-desktop-windows-x64.zip
+          path: |
+            desktop/out/JOKER-desktop-windows-x64.zip
+            desktop/out/JOKER-Setup-*.exe
 
   release:
     name: Релиз
@@ -96,7 +122,7 @@ jobs:
           mkdir release
           cp artifacts/android-apk/JOKER-release.apk release/JOKER.apk
           cp artifacts/extension/*.zip release/
-          cp artifacts/desktop-windows/*.zip release/
+          cp artifacts/desktop-windows/*.zip artifacts/desktop-windows/*.exe release/
           ls -l release
       - uses: softprops/action-gh-release@v2
         with:
