@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>JOKER</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <strong>JOKER</strong>
+    <span id="host"></span>
+  </header>
+
+  <label class="row">
+    <span class="txt">
+      <b>Полный экран</b>
+      <small>Сайт видит, что окно открыто на весь экран</small>
+    </span>
+    <select id="fullscreen">
+      <option value="off">Выкл</option>
+      <option value="site">Этот сайт</option>
+      <option value="all">Все сайты</option>
+    </select>
+  </label>
+
+  <label class="row">
+    <span class="txt">
+      <b>Скрыть переключение</b>
+      <small>Сайт не узнаёт, что вы ушли в другое окно или вкладку</small>
+    </span>
+    <select id="focus">
+      <option value="off">Выкл</option>
+      <option value="site">Этот сайт</option>
+      <option value="all">Все сайты</option>
+    </select>
+  </label>
+
+  <footer id="status">Применяется сразу, без перезагрузки страницы.<br>Горячие клавиши: Alt+Shift+F и Alt+Shift+H.</footer>
+  <script src="popup.js"></script>
+</body>
+</html>

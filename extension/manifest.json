@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "JOKER",
+  "version": "1.0.0",
+  "description": "Сайт видит полноэкранный режим и не узнаёт о переключении на другое окно или вкладку. Включается отдельно для каждого сайта.",
+  "minimum_chrome_version": "111",
+  "permissions": ["storage", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "JOKER",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png",
+      "48": "icons/48.png",
+      "128": "icons/128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["core.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true,
+      "world": "MAIN"
+    }
+  ],
+  "commands": {
+    "toggle-fullscreen": {
+      "suggested_key": { "default": "Alt+Shift+F" },
+      "description": "Включить/выключить «полный экран» на этой вкладке"
+    },
+    "toggle-focus": {
+      "suggested_key": { "default": "Alt+Shift+H" },
+      "description": "Включить/выключить скрытие переключения окон на этой вкладке"
+    }
+  }
+}
