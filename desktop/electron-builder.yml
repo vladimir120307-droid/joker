@@ -1,0 +1,28 @@
+# Установщик JOKER для Windows (NSIS). Собирается из уже упакованной папки (npm run package):
+#   npm run package && npm run installer   ->   out/JOKER-Setup-<версия>.exe
+appId: app.joker.desktop
+productName: JOKER
+directories:
+  buildResources: build
+  output: out
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+  # Папку упаковал @electron/packager вместе со значком и метаданными .exe, поэтому править .exe
+  # (и скачивать для этого winCodeSign) не нужно
+  signAndEditExecutable: false
+nsis:
+  oneClick: false                          # обычный мастер: можно выбрать папку, в конце запуск программы
+  perMachine: false                        # ставится для текущего пользователя
+  allowElevation: false                    # права администратора не запрашиваются
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: JOKER
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  artifactName: JOKER-Setup-${version}.exe

@@ -3,16 +3,19 @@
   "productName": "JOKER",
   "version": "1.0.0",
   "description": "Лёгкий приватный браузер на Chromium",
+  "author": "JOKER",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "selftest": "electron . --selftest",
     "sync-core": "node ../tools/sync-core.js",
-    "package": "node ../tools/pack-desktop.js"
+    "package": "node ../tools/pack-desktop.js",
+    "installer": "electron-builder --prepackaged out/JOKER-win32-x64 --win nsis --x64 --publish never"
   },
   "license": "UNLICENSED",
   "devDependencies": {
     "@electron/packager": "^20.3.0",
-    "electron": "^45.4.1"
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
   }
 }
