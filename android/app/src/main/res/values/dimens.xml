@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="top_bar_height">56dp</dimen>
+    <dimen name="omnibox_height">42dp</dimen>
+    <dimen name="bottom_bar_height">58dp</dimen>
+</resources>

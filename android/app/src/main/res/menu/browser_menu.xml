@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/menu_new_tab" android:title="@string/menu_new_tab" />
+    <item android:id="@+id/menu_find" android:title="@string/menu_find" />
+    <item android:id="@+id/menu_desktop" android:checkable="true" android:title="@string/menu_desktop" />
+    <item android:id="@+id/menu_third_party" android:checkable="true" android:title="@string/menu_block_third_party" />
+    <item android:id="@+id/menu_share" android:title="@string/menu_share" />
+    <item android:id="@+id/menu_copy" android:title="@string/menu_copy" />
+    <item android:id="@+id/menu_open_external" android:title="@string/menu_open_external" />
+    <item android:id="@+id/menu_downloads" android:title="@string/menu_downloads" />
+    <item android:id="@+id/menu_help" android:title="@string/menu_help" />
+    <item android:id="@+id/menu_end_session" android:title="@string/menu_end_session" />
+</menu>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">JOKER</string>
+
+    <!-- панели -->
+    <string name="url_hint">Поиск или адрес сайта</string>
+    <string name="back">Назад</string>
+    <string name="forward">Вперёд</string>
+    <string name="reload">Обновить</string>
+    <string name="stop">Остановить загрузку</string>
+    <string name="tabs">Вкладки</string>
+    <string name="menu">Меню</string>
+    <string name="not_secure">Не защищено</string>
+
+    <!-- режимы -->
+    <string name="mode_fullscreen">Полный экран</string>
+    <string name="mode_focus">Скрыть переключение</string>
+    <string name="label_fullscreen">Экран</string>
+    <string name="label_focus">Скрыть</string>
+    <string name="state_on">включено</string>
+    <string name="state_off">выключено</string>
+    <string name="toast_fs_on">Экран: сайт видит окно на весь экран</string>
+    <string name="toast_fs_off">Экран выключен</string>
+    <string name="toast_focus_on">Скрыть: сайт не видит, что вы ушли</string>
+    <string name="toast_focus_off">Скрыть выключено</string>
+    <string name="tab_mode_fullscreen">Полный экран</string>
+    <string name="tab_mode_focus">Скрытие переключения</string>
+
+    <!-- вкладки -->
+    <string name="tabs_title">Вкладки: %1$d</string>
+    <string name="new_tab">Новая вкладка</string>
+    <string name="close_tab">Закрыть вкладку</string>
+    <string name="close">Закрыть</string>
+    <string name="tab_untitled">Загрузка…</string>
+    <string name="tab_new_title">Новая вкладка</string>
+    <string name="render_gone">Вкладка аварийно закрылась</string>
+
+    <!-- поиск по странице -->
+    <string name="find_hint">Найти на странице</string>
+    <string name="find_prev">Предыдущее</string>
+    <string name="find_next">Следующее</string>
+
+    <!-- меню -->
+    <string name="menu_new_tab">Новая вкладка</string>
+    <string name="menu_find">Найти на странице</string>
+    <string name="menu_desktop">Версия для ПК</string>
+    <string name="menu_block_third_party">Блокировать сторонние cookie</string>
+    <string name="menu_share">Поделиться</string>
+    <string name="menu_copy">Копировать ссылку</string>
+    <string name="menu_open_external">Открыть в другом приложении</string>
+    <string name="menu_downloads">Загрузки</string>
+    <string name="menu_end_session">Завершить сеанс…</string>
+    <string name="menu_help">Что умеют режимы</string>
+    <string name="copied">Скопировано</string>
+
+    <!-- сеанс -->
+    <string name="end_session_title">Завершить сеанс?</string>
+    <string name="end_session_message">Все вкладки будут закрыты, а cookie, кэш и данные сайтов удалены.</string>
+    <string name="end_session_yes">Завершить</string>
+    <string name="session_cleared">Сеанс очищен</string>
+    <string name="cancel">Отмена</string>
+    <string name="ok">OK</string>
+
+    <!-- справка -->
+    <string name="help_title">Что умеют режимы</string>
+    <string name="help_message">Экран — сайт видит, что окно открыто на весь экран, хотя сам браузер не меняется.\n\nСкрыть — сайт не узнаёт, что вы свернули приложение, открыли другое окно или ушли с вкладки.\n\nРежимы включаются отдельно для каждой вкладки; новая вкладка, открытая со страницы, наследует режимы той, откуда открыта.\n\nПриватность: cookie, кэш и данные сайтов лежат в отдельном профиле, который удаляется при выходе. Сторонние cookie блокируются (можно выключить в меню).\n\nЧестно: режимы скрывают события на стороне страницы. Они не влияют на то, что сайт может узнать иначе — например, через камеру, запись экрана или анализ на сервере.</string>
+
+    <!-- разрешения сайтов -->
+    <string name="perm_title">Запрос разрешения</string>
+    <string name="perm_message">%1$s хочет использовать %2$s</string>
+    <string name="perm_camera">камеру</string>
+    <string name="perm_mic">микрофон</string>
+    <string name="perm_camera_mic">камеру и микрофон</string>
+    <string name="perm_location">ваше местоположение</string>
+    <string name="allow">Разрешить</string>
+    <string name="block">Блокировать</string>
+
+    <!-- загрузки и ссылки -->
+    <string name="download_started">Загрузка: %1$s</string>
+    <string name="download_failed">Не удалось начать загрузку</string>
+    <string name="download_unsupported">Такую ссылку нельзя скачать</string>
+    <string name="link_open_new">Открыть в новой вкладке</string>
+    <string name="link_copy">Копировать ссылку</string>
+    <string name="link_share">Поделиться ссылкой</string>
+    <string name="image_open">Открыть картинку в новой вкладке</string>
+    <string name="image_save">Скачать картинку</string>
+    <string name="image_copy">Копировать адрес картинки</string>
+    <string name="no_app">Нет приложения для открытия</string>
+
+    <!-- диалоги страниц -->
+    <string name="leave_page">Покинуть страницу? Несохранённые изменения могут пропасть.</string>
+    <string name="leave">Покинуть</string>
+    <string name="stay">Остаться</string>
+    <string name="auth_title">Вход на %1$s</string>
+    <string name="auth_user">Имя пользователя</string>
+    <string name="auth_pass">Пароль</string>
+    <string name="sign_in">Войти</string>
+
+    <!-- страница ошибки -->
+    <string name="err_title">Не удаётся получить доступ к сайту</string>
+    <string name="err_retry">Повторить</string>
+</resources>
