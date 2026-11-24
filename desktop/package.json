@@ -1,0 +1,16 @@
+{
+  "name": "joker",
+  "productName": "JOKER",
+  "version": "1.0.0",
+  "description": "Лёгкий приватный браузер на Chromium",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "selftest": "electron . --selftest",
+    "sync-core": "node ../tools/sync-core.js"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^45.4.1"
+  }
+}
