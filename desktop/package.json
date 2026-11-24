@@ -7,10 +7,12 @@
   "scripts": {
     "start": "electron .",
     "selftest": "electron . --selftest",
-    "sync-core": "node ../tools/sync-core.js"
+    "sync-core": "node ../tools/sync-core.js",
+    "package": "node ../tools/pack-desktop.js"
   },
   "license": "UNLICENSED",
   "devDependencies": {
+    "@electron/packager": "^20.3.0",
     "electron": "^45.4.1"
   }
 }

@@ -16,6 +16,9 @@ android/e2e/out/
 *.keystore
 *.jks
 
+# сборка браузера для Windows
+desktop/out/
+
 # тесты
 tests/extension/out/
 

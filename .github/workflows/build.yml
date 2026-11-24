@@ -61,10 +61,29 @@ jobs:
           name: android-apk
           path: android/app/build/outputs/apk/release/JOKER-release.apk
 
+  desktop:
+    name: Браузер для Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Установить зависимости
+        working-directory: desktop
+        run: npm ci
+      - name: Собрать JOKER.exe и архив
+        working-directory: desktop
+        run: npm run package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: desktop/out/JOKER-desktop-windows-x64.zip
+
   release:
     name: Релиз
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [extension, android]
+    needs: [extension, android, desktop]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -77,6 +96,7 @@ jobs:
           mkdir release
           cp artifacts/android-apk/JOKER-release.apk release/JOKER.apk
           cp artifacts/extension/*.zip release/
+          cp artifacts/desktop-windows/*.zip release/
           ls -l release
       - uses: softprops/action-gh-release@v2
         with:

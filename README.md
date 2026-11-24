@@ -20,7 +20,7 @@
 |---|---|---|
 | Расширение | Chrome, Edge, Brave, Opera, Яндекс.Браузер; Firefox и Firefox для Android | [`extension/`](extension) |
 | Приложение для Android | Android 8.0 и новее | [`android/`](android) |
-| Браузер для ПК | Windows, macOS, Linux (Electron / Chromium) | [`desktop/`](desktop) |
+| Браузер для ПК | Windows (готовая сборка в Releases), macOS и Linux (из исходников) | [`desktop/`](desktop) |
 
 iPhone не поддерживается: для этого нужны Mac, Xcode и аккаунт разработчика Apple.
 
@@ -71,11 +71,16 @@ JOKER_KEYSTORE=/путь/joker.keystore JOKER_KEYSTORE_PASSWORD=... JOKER_KEY_AL
 
 ## Браузер для ПК
 
+**Готовая сборка для Windows:** скачайте `JOKER-desktop-windows-x64.zip` из раздела Releases, распакуйте и запустите `JOKER.exe` (установка не нужна). Программа не подписана, поэтому при первом запуске Windows может показать предупреждение SmartScreen: нажмите «Подробнее» → «Выполнить в любом случае».
+
+Из исходников (любая система):
+
 ```
 cd desktop
 npm install
 npm start          # или start.bat на Windows
-npm run selftest   # автотест в настоящем Chromium
+npm run selftest   # автотест в настоящем Chromium (открывает и сворачивает окна на экране)
+npm run package    # сборка для Windows: desktop/out/JOKER-win32-x64/JOKER.exe и архив рядом
 ```
 
 Вкладки в заголовке окна, омнибокс, поиск по странице, контекстное меню и горячие клавиши как в Chrome (`Ctrl+T/W/L/R/F`, `Ctrl+Tab`, `Ctrl+1..9`, `Ctrl+Shift+T`, `F11`, `F12`, `Alt+←/→`, масштаб), в том числе в русской раскладке. Режимы переключаются кнопками на панели или `Ctrl+Shift+F` / `Ctrl+Shift+H`. Сессия только в памяти, `DNT` и `Sec-GPC`, без утечки локального IP через WebRTC, камера/микрофон/геопозиция только по запросу. Поисковик меняется в `SEARCH_URL` в `main.js`.
@@ -93,23 +98,26 @@ extension/    расширение (MV3): здесь только файлы, к
 tests/        тест расширения в настоящем Chromium (tests/extension)
 desktop/      браузер для ПК на Electron
 android/      приложение для Android и проверка на устройстве (android/e2e)
-tools/        иконки, сборка расширения для Chrome и Firefox, синхронизация core.js
-.github/      сборка в CI: расширение, APK, релиз по тегу v*
+tools/        значки из рисунка глаза, сборка расширения и браузера для Windows, синхронизация core.js
+assets/       анимированный логотип для README
+.github/      сборка в CI: расширение, APK, браузер для Windows, релиз по тегу v*
 ```
+
+Исходник значка: `tools/icon-source.png`. Если рисунок заменить, `node tools/make-icons.js` и `node tools/make-ico.js` пересоберут все размеры для расширения, Android и `JOKER.exe`, а также анимированный логотип.
 
 ## Что проверено
 
 Всё ниже запускалось в настоящем Chromium/WebView, а не на заглушках:
 
 * **Расширение**: `tests/extension` (Playwright + Chromium; запуск: `cd tests/extension && npm install && npm run install-browser && npm test`): подмена, живое включение, включение с первого скрипта после перезагрузки, сохранение настроек после перезапуска браузера, popup.
-* **Браузер для ПК**: `npm run selftest`: реальный уход из окна (второе окно, `hide`, `minimize`), iframe на другом origin, маскировка, приватная сессия, заголовки.
+* **Браузер для ПК**: `npm run selftest`: реальный уход из окна (второе окно, `hide`, `minimize`), iframe на другом origin, маскировка, приватная сессия, заголовки. Собранный для Windows `JOKER.exe` проходил тот же самотест.
 * **Android**: `android/e2e/run.mjs` на эмуляторе Android 15 (WebView 158): настоящий уход в фон кнопкой Home, тапы по кнопкам режимов, iframe другого сайта, перезагрузка, всплывающие окна, видео на весь экран, ввод адреса и клавиатура, страница ошибки и «назад» с неё, диалоги JS, запрос микрофона, версия для ПК, поиск, загрузка файла, приватность по следам на диске, выход и повторный запуск, поворот экрана, смена темы. `android/e2e/release-smoke.mjs` проверяет то же главное в релизной сборке (R8, без отладочного порта).
 
 Не проверялось: Firefox и Firefox для Android, физический телефон (только эмулятор), macOS и Linux для браузера на ПК.
 
 ## Релизы
 
-`.github/workflows/build.yml` на каждый push собирает расширение и APK; по тегу `v*` (например `git tag v1.0.0 && git push --tags`) публикует релиз с `JOKER.apk` и архивами расширения. Чтобы APK из CI подписывался вашим ключом, добавьте секреты репозитория `JOKER_KEYSTORE_BASE64` (`base64 -w0 joker.keystore`), `JOKER_KEYSTORE_PASSWORD`, `JOKER_KEY_ALIAS`, `JOKER_KEY_PASSWORD`.
+`.github/workflows/build.yml` на каждый push собирает расширение и APK; по тегу `v*` (например `git tag v1.0.0 && git push --tags`) публикует релиз с `JOKER.apk`, архивами расширения и сборкой браузера для Windows. Чтобы APK из CI подписывался вашим ключом, добавьте секреты репозитория `JOKER_KEYSTORE_BASE64` (`base64 -w0 joker.keystore`), `JOKER_KEYSTORE_PASSWORD`, `JOKER_KEY_ALIAS`, `JOKER_KEY_PASSWORD`.
 
 ## Честно о пределах
 
