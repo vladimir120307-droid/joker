@@ -1,0 +1,24 @@
+# зависимости и результаты сборки
+node_modules/
+dist/
+*.log
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/e2e/out/
+*.iml
+
+# ключи подписи никогда не коммитим
+*.keystore
+*.jks
+
+# тесты
+tests/extension/out/
+
+# система
+.DS_Store
+Thumbs.db
