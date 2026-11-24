@@ -3,6 +3,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const { app, BrowserWindow } = require('electron');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -77,6 +78,17 @@ module.exports = async function run(ctx) {
     log('navigator.userAgentData.brands: ' + brands);
     check('в client hints (userAgentData.brands) нет «Electron» и названия приложения', !/Electron|JOKER/i.test(brands), brands);
     check('iframe на другом origin создан', frames().length === 1, frames().map((f) => f.url));
+
+    // ---------- страница новой вкладки ----------
+    const newtabUrl = pathToFileURL(path.join(__dirname, 'ui', 'newtab.html')).href;
+    const nt = ctx.createTab(newtabUrl, true);
+    await new Promise((r) => nt.view.webContents.once('did-finish-load', r));
+    const ntLogo = await nt.view.webContents.executeJavaScript(
+      "(() => { const i = document.querySelector('img.logo'); return !!i && i.complete && i.naturalWidth === 192; })()");
+    check('страница новой вкладки: логотип (анимированный PNG 192×192) загрузился', ntLogo === true, ntLogo);
+    ctx.closeTab(nt.id);
+    ctx.activateTab(tab.id);   // дальше проверки идут на основной вкладке, она должна быть активной
+    await sleep(500);
 
     // ---------- уход из окна тремя способами ----------
     const focusMain = async () => {

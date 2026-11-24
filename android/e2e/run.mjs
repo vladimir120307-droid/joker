@@ -239,6 +239,8 @@ await section('Запуск', async () => {
   forwardCdp();
   const tNew = await waitTarget((x) => /newtab\.html/.test(x.url));
   check('приложение запускается и показывает страницу новой вкладки', !!tNew, tNew.url);
+  const logoOk = await cdp(tNew, `(() => { const i = document.querySelector('img.logo'); return !!i && i.complete && i.naturalWidth === 192; })()`);
+  check('страница новой вкладки: логотип (анимированный PNG 192×192) загрузился', logoOk === true, logoOk);
   screenshot('01-new-tab');
 
   t = await openPage('');
