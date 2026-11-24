@@ -1,7 +1,8 @@
 // Проверка расширения в настоящем Chromium (Playwright).
 //   cd tests/extension && npm install && npm run install-browser && npm test
 // Загружает extension/ как распакованное расширение и проверяет: подмену, живое включение, включение с первого
-// скрипта после перезагрузки, сохранение настроек после перезапуска браузера и popup. Окно браузера мигнёт на экране.
+// скрипта после перезагрузки, сохранение настроек после перезапуска браузера и popup.
+// По умолчанию Chromium работает без окна («новый headless»); HEADED=1 — запустить с видимым окном.
 import { chromium } from 'playwright-core';
 import http from 'http';
 import path from 'path';
@@ -38,8 +39,10 @@ const pa = await listen('127.0.0.1', (rq, rs) => {
 });
 const URL_A = `http://127.0.0.1:${pa}/`;
 
+const HEADED = process.env.HEADED === '1';
 const launch = () => chromium.launchPersistentContext(profile, {
-  headless: false, args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`],
+  headless: !HEADED, ...(HEADED ? {} : { channel: 'chromium' }),   // без окна расширения работают только в «новом headless»
+  args: [`--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`],
 });
 const getSW = async (ctx) => { let [sw] = ctx.serviceWorkers(); if (!sw) sw = await ctx.waitForEvent('serviceworker', { timeout: 15000 }); return sw; };
 const STATE = () => { const s = window[Symbol.for('wnd.s')]; return s ? { focus: !!s.focus, fullscreen: !!s.fullscreen } : null; };
