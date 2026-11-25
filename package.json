@@ -11,5 +11,5 @@
     "desktop": "npm --prefix desktop start",
     "desktop:test": "npm --prefix desktop run selftest"
   },
-  "license": "UNLICENSED"
+  "license": "MIT"
 }
