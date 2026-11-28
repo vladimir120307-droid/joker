@@ -1,0 +1,34 @@
+name: Сообщение об ошибке
+description: Что-то работает не так, как описано в README
+labels: [bug]
+body:
+  - type: dropdown
+    id: variant
+    attributes:
+      label: Где ошибка
+      options:
+        - Расширение (Chrome, Edge, Brave, Opera, Яндекс.Браузер)
+        - Расширение (Firefox)
+        - Браузер для Windows
+        - Приложение для Android
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Система и версии
+      description: Операционная система, браузер и версия JOKER
+      placeholder: Windows 11, Chrome 140, JOKER 1.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Что делали и что произошло
+      description: По шагам, чтобы можно было повторить. Если дело в конкретном сайте, укажите его адрес.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Что ожидали увидеть
