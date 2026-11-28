@@ -239,7 +239,8 @@ await section('Запуск', async () => {
   forwardCdp();
   const tNew = await waitTarget((x) => /newtab\.html/.test(x.url));
   check('приложение запускается и показывает страницу новой вкладки', !!tNew, tNew.url);
-  const logoOk = await cdp(tNew, `(() => { const i = document.querySelector('img.logo'); return !!i && i.complete && i.naturalWidth === 192; })()`);
+  // страница появляется раньше, чем догрузится картинка, поэтому ждём её (до 10 секунд)
+  const logoOk = await cdp(tNew, `new Promise((res) => { const t0 = Date.now(); (function w() { const i = document.querySelector('img.logo'); const ok = !!i && i.complete && i.naturalWidth === 192; if (ok || Date.now() - t0 > 10000) res(ok); else setTimeout(w, 100); })(); })`, { awaitPromise: true });
   check('страница новой вкладки: логотип (анимированный PNG 192×192) загрузился', logoOk === true, logoOk);
   screenshot('01-new-tab');
 
